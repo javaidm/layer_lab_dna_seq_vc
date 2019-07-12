@@ -1,6 +1,6 @@
 work/
 *~
-log/
+logs/
 nf_reports/
 analysis/
 .nextflow/

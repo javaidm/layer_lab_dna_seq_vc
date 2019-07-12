@@ -2,7 +2,8 @@
 nextflow.preview.dsl=2
 
 platform = "ILLUMINA"
-templateDir = "${PWD}/lib/bash_templates"
+// templateDir = "${PWD}/lib/bash_templates"
+templateDir = "${workflow.projectDir}/lib/bash_templates"
 params.name = 'Layer Lab DNA Seq Analysis Pipeline'
 
 params.help = false // Don't give help information
