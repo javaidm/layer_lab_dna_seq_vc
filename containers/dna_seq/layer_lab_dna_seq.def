@@ -1,0 +1,33 @@
+bootstrap: docker
+from: debian
+
+%files
+environment.yml /opt/environment.yml
+
+%environment
+PATH=/opt/miniconda/envs/$(head -1 /opt/environment.yml | cut -d' ' -f2)/bin:$PATH
+
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
+%post
+conda_base_dir=/opt/miniconda
+conda="${conda_base_dir}/bin/conda"
+
+apt-get update
+apt-get -y install locales
+echo "LC_ALL=en_US.UTF-8" >> /etc/environment
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+locale-gen en_US.UTF-8
+
+# bzip2 needed for miniconda
+apt-get -y install wget bzip2 procps
+# Clear apt-get local respository and cached packages
+apt-get clean
+# Get and Install the minconda
+wget -c https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+/bin/bash miniconda.sh -b -p ${conda_base_dir} && rm -f miniconda.sh
+
+# create a conda environment for this pipeline:
+${conda} env create -f /opt/environment.yml

@@ -1,0 +1,6 @@
+work/
+*~
+log/
+nf_reports/
+analysis/
+.nextflow/
