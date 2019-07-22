@@ -11,11 +11,16 @@ gff3 = params.gff3
 templateDir=params.templateDir
 customRunName = params.customRunName
 
+// process ExtractFilesFromSampleDir{
+//     input:
+//     val(srcPath)
+//     output
+// }
 process RunFastQC {
     tag "$sample"
     publishDir "${outDir}/fastqc", mode: 'copy'
     when:
-    !params.skipQc && !params.skipFastqc
+    !params.skipQc && !params.skipFastQc
 
     input:
     set val(sample), file(reads)
@@ -195,11 +200,3 @@ process RunMultiQC {
     """
 }
 
-
-// Some Helper methods
-
-def get_chrm_list(){
-    chrs = (1..22).collect()
-    chrs.addAll(['X', 'Y', 'MT'])
-    return chrs
-}

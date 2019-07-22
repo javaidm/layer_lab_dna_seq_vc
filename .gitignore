@@ -4,3 +4,4 @@ logs/
 nf_reports/
 analysis/
 .nextflow/
+.nextflow.log*
