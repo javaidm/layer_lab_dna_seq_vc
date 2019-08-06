@@ -1,15 +1,15 @@
 
 // set shorter versions of the  the passed parameter names
-threads = params.threads
-platform = params.platform 
-outDir = params.outDir
+THREADS = params.threads
+PLATFORM = params.platform 
+OUT_DIR = params.outDir
 
-dbsnp = params.dbsnp
-known_indels = params.knownIndels
-ref_fasta = params.refFasta
-gff3 = params.gff3
-templateDir=params.templateDir
-customRunName = params.customRunName
+DBSNP = params.dbsnp
+KNOWN_INDELS = params.knownIndels
+REF_FASTA = params.refFasta
+ENSEMBL_GENE_ANNOTATIONS = params.ensemblGeneAnnotation
+TEMPLATE_DIR=params.templateDir
+CUSTOM_RUN_NAME = params.customRunName
 
 // process ExtractFilesFromSampleDir{
 //     input:
@@ -18,7 +18,7 @@ customRunName = params.customRunName
 // }
 process RunFastQC {
     tag "$sample"
-    publishDir "${outDir}/fastqc", mode: 'copy'
+    publishDir "${OUT_DIR}/fastqc", mode: 'copy'
     when:
     !params.skipQc && !params.skipFastQc
 
@@ -30,7 +30,7 @@ process RunFastQC {
     file '.command.out'
 
     script:
-    template "${templateDir}/run_fastqc.sh"
+    template "${TEMPLATE_DIR}/run_fastqc.sh"
 }
 
 
@@ -38,7 +38,7 @@ process RunFastQC {
 process MapReads {
     echo true
     tag "$sample"
-    publishDir "${outDir}/align/"
+    publishDir "${OUT_DIR}/align/"
     input:
     set val(sample), file(reads)
 
@@ -51,13 +51,13 @@ process MapReads {
     r2 = reads[1]
     
     script:
-    template "${templateDir}/map_reads.sh"
+    template "${TEMPLATE_DIR}/map_reads.sh"
 }
 
 process CreateRecalibrationTable{
     echo true
     tag "$sample"
-    publishDir "${outDir}/misc/recal_table/", mode: 'copy'
+    publishDir "${OUT_DIR}/misc/recal_table/", mode: 'copy'
 
     input:
     file (sample_cram)
@@ -69,13 +69,13 @@ process CreateRecalibrationTable{
     
     script:
     sample = "${sample_cram.baseName}" 
-    template "${templateDir}/create_recalibration_table.sh"
+    template "${TEMPLATE_DIR}/create_recalibration_table.sh"
 }
 
 process ApplyBQSR {
     echo true
     tag "$sample"
-    publishDir "${outDir}/misc/BQSR/", mode: 'copy'
+    publishDir "${OUT_DIR}/misc/BQSR/", mode: 'copy'
 
     input:
     file(sample_cram) 
@@ -88,13 +88,13 @@ process ApplyBQSR {
 
     script:
     sample = "${sample_cram.baseName}"
-    template "${templateDir}/apply_bqsr.sh"
+    template "${TEMPLATE_DIR}/apply_bqsr.sh"
 }
 
 process CallVariants {
     echo true
     tag "$sample"
-    publishDir "${outDir}/variants/", mode: 'copy'
+    publishDir "${OUT_DIR}/variants/", mode: 'copy'
 
     input:
     file(file_bqsr_bam)
@@ -107,14 +107,14 @@ process CallVariants {
     
     script:
     sample = file_bqsr_bam.getSimpleName()
-    template "${templateDir}/call_variants.sh"
+    template "${TEMPLATE_DIR}/call_variants.sh"
 }
 
 
 
 process RunGenomicsDBImport {
     echo true
-    publishDir "${outDir}/misc/genomicsdb/"
+    publishDir "${OUT_DIR}/misc/genomicsdb/"
 
     input:
     file('*')
@@ -128,13 +128,13 @@ process RunGenomicsDBImport {
     script:
     sample_map="cohort_samples.map"
     gDB = "chr${chr}"
-    template "${templateDir}/run_genomics_db_import.sh" 
+    template "${TEMPLATE_DIR}/run_genomics_db_import.sh" 
 }
 
 
 process GenotypeGVCF{
     echo true
-    publishDir "${outDir}/misc/genotype_gvcf/"
+    publishDir "${OUT_DIR}/misc/genotype_gvcf/"
 
     input:
     file(genomics_db_workspace)
@@ -144,27 +144,29 @@ process GenotypeGVCF{
 
     script:
     out_file = "${genomics_db_workspace.baseName}.vcf"  
-    template "${templateDir}/genotype_gvcf.sh"  
+    template "${TEMPLATE_DIR}/genotype_gvcf.sh"  
 }
 
 process ConcatVCF{
     echo true
-    publishDir "${outDir}/results/"
+    publishDir "${OUT_DIR}/results/"
 
     input:
     file('*')
 
     output:
     file(out_file)
+    file "${out_file}.gz" 
+    file "${out_file}.gz.tbi"
 
     script:
     out_file='cohort_joint.vcf'
-    template "${templateDir}/concat_vcf.sh" 
+    template "${TEMPLATE_DIR}/concat_vcf.sh" 
 }
 
 process RunCSQ{
     echo true
-    publishDir "${outDir}/csq/"
+    publishDir "${OUT_DIR}/csq/"
 
     input:
     file(vcf)
@@ -174,11 +176,11 @@ process RunCSQ{
 
     script:
     out_file = "cohort.bcf"    
-    template "${templateDir}/run_csq.sh"  
+    template "${TEMPLATE_DIR}/run_csq.sh"  
 }
 
 process RunMultiQC {
-    publishDir "${outDir}/multiqc", mode: 'copy'
+    publishDir "${OUT_DIR}/multiqc", mode: 'copy'
 
     input:
     file (fastqc:'fastqc/*')
@@ -192,8 +194,8 @@ process RunMultiQC {
 
     script:
     prefix = fastqc[0].toString() - '_fastqc.html' - 'fastqc/'
-    rtitle = customRunName ? "--title \"$customRunName\"" : ''
-    rfilename = customRunName ? "--filename " + customRunName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+    rtitle = CUSTOM_RUN_NAME ? "--title \"$CUSTOM_RUN_NAME\"" : ''
+    rfilename = CUSTOM_RUN_NAME ? "--filename " + CUSTOM_RUN_NAME.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     """
     multiqc -f $rtitle $rfilename  . 2>&1
     

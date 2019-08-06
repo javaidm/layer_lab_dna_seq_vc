@@ -2,7 +2,7 @@
 set -exuo pipefail
 gatk BaseRecalibrator \
             -I  $sample_cram\
-            --known-sites $dbsnp \
-            --known-sites $known_indels \
+            --known-sites $DBSNP \
+            --known-sites $KNOWN_INDELS \
             -O ${sample}.recal.table \
-            -R $ref_fasta
+            -R $REF_FASTA

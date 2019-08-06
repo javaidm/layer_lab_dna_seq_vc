@@ -4,7 +4,48 @@ initParamsToDefaults()
 if (params.help) exit 0, helpMessage()
 platform = "ILLUMINA"
 templateDir = "${workflow.projectDir}/lib/bash_templates"
-processParams()
+// processParams()
+/* Process the parameters and set the environemnt */
+params.name = 'Layer Lab DNA Seq Analysis Pipeline'
+params.tag = 'latest' // Default tag is latest, to be overwritten by --tag <version>
+params.contactMail ?: 'mahmood.javaid@colorado.edu'
+if (!params.sample && !params.reads){
+    exit 1, 'You must sepcify either a sample tsv file or the reads, see --help'
+}
+// Check parameters for profile fiji
+// If they are not provided at the command line, set them for fiji from the env section of the config
+if (workflow.profile == 'fiji'){
+  resultsDir = params.resultsDir ?: "$fiji_results_dir"
+  dbsnp = params.dbsnp ?: "$fiji_dbsnp"
+  ensemblGeneAnnotation = params.ensemblGeneAnnotation ?: "$fiji_ensembl_gene_annotation"
+  knownIndels = params.knownIndels ?: "$fiji_known_indels"
+  refFasta = params.refFasta ?: "$fiji_ref_fasta"
+}
+// Check parameters for mendel
+if (workflow.profile == 'mendel'){
+  resultsDir = params.resultsDir ?: "$mendel_results_dir"
+  dbsnp = params.dbsnp ?: "$mendel_dbsnp"
+  ensemblGeneAnnotation = params.ensemblGeneAnnotation ?: "$mendel_ensembl_gene_annotation"
+  knownIndels = params.knownIndels ?: "$mendel_known_indels"
+  refFasta = params.refFasta ?: "$mendel_ref_fasta"
+}
+// Finally check if all the required parameters have either been provided via the commandline or
+// by specifying a particular profile such as fiji or mendel
+if (!resultsDir) exit 1, 'Specify the directory to store analysis results, see --help'  
+if (!dbsnp) exit 1, 'Specify the dbsnp (*.vcf.gz) file, see --help'  
+if (!ensemblGeneAnnotation) exit 1, 'Specify the ensemblGeneAnnotation (*.gff3.gz) file, see --help'  
+if (!knownIndels) exit 1, 'Specify the known indels (*.vcf.gz) file, see --help'  
+if (!refFasta) exit 1, 'Specify the refenrece fasta (*.fasta.gz) file, see --help'  
+
+if (!params.runName) exit 1, 'Specify a run name, see --help'
+runNameWithoutSpaces = params.runName.replaceAll('\\W','_')
+outDir = "${resultsDir}/${runNameWithoutSpaces}"
+log.info "Output dir: ${outDir}"
+
+if (!workflow.commandLine.contains('-resume') && file(outDir).exists())
+  exit 1, "${outDir} already exists, specify another results dir or run name"
+
+/* End of parameter handling section */
 
 // Handle input files
 inputFiles = Channel.empty()
@@ -30,15 +71,14 @@ Channel.from(LLabUtils.getChrmList())
 .set{chrmList}
 
 // println params
-
 include 'lib/nf_modules/modules.nf' params(
-                                outDir: params.outDir,
+                                outDir: outDir,
                                 skipFastQc: params.skipFastQc,
                                 skipQc: params.skipQc,
-                                dbsnp: params.dbsnp,
-                                gff3: params.gff3,
-                                refFasta: params.refFasta,
-                                knownIndels: params.knownIndels,
+                                dbsnp: dbsnp,
+                                ensemblGeneAnnotation: ensemblGeneAnnotation,
+                                refFasta: refFasta,
+                                knownIndels: knownIndels,
                                 templateDir: templateDir,
                                 platform: platform,
 				                        customRunName:  params.runName,
@@ -72,7 +112,7 @@ workflow{
     
     GenotypeGVCF(RunGenomicsDBImport.out)
     ConcatVCF(GenotypeGVCF.out.collect())
-    RunCSQ(ConcatVCF.out)
+    RunCSQ(ConcatVCF.out[0])
     
     RunMultiQC(
         RunFastQC.out[0].collect(),
@@ -95,9 +135,9 @@ def initParamsToDefaults(){
   params.reads = null_path
   params.runName = ''
   params.contactMail=''
-  params.resultsDir = null_path
+  // params.resultsDir = null_path
   params.dbsnp = null_path
-  params.gff3 = null_path
+  params.ensemblGeneAnnotation = null_path
   params.refFasta = null_path
   params.knownIndels = null_path
 
@@ -109,21 +149,6 @@ def initParamsToDefaults(){
 }
 
 /* Helper functions */
-def  processParams(){
-  params.name = 'Layer Lab DNA Seq Analysis Pipeline'
-  params.tag = 'latest' // Default tag is latest, to be overwritten by --tag <version>
-  params.contactMail ?: 'mahmood.javaid@colorado.edu'
-  if (!params.sample && !params.reads){
-      exit 1, 'You must sepcify either a sample tsv file or the reads, see --help'
-  }
-
-  if (!params.resultsDir) exit 1, 'Specify the directory to store analysis results, see --help'  
-  if (!params.runName) exit 1, 'Specify a run name, see --help'
-  runNameWithoutSpaces = params.runName.replaceAll('\\W','_')
-  params.outDir = "${params.resultsDir}/${runNameWithoutSpaces}"
-  log.info "Output directory for results is set to: ${params.outDir}"
-  if (file(params.outDir).exists()) exit 1, "${params.outDir} already exists, specify another results dir or run name"
-}
 
 def grabRevision() {
   // Return the same string executed from github or not
@@ -150,6 +175,11 @@ def helpMessage() {
   log.info "       Specify a run name, results will be stored under results-dir/run-name"
   log.info "    --manifest [optional <manifest.csv>]"
   log.info "       Specify an optional manifest file."  
+  log.info "    --dbsnp [optional if already specified as part of a Nextflow Profile]"
+  log.info "    --ensembl-gene-annotation [optional if already specified as part of a Nextflow Profile]"
+  log.info "    --known-indels [optional if already specified as part of a Nextflow Profile]"
+  log.info "    --ref-fasta [optional if already specified as part of a Nextflow Profile]"
+  log.info "       Human Genome Reference File."  
   log.info "    --onlyQC"
   log.info "       Run only QC tools and gather reports."
   log.info "    --help"

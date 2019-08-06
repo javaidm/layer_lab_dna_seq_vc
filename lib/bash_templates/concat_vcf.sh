@@ -26,3 +26,6 @@ chr22.vcf \
 chrX.vcf \
 chrY.vcf \
 chrMT.vcf 
+
+bgzip -c ${out_file} > ${out_file}.gz
+tabix -p vcf ${out_file}.gz

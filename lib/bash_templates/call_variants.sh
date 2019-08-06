@@ -2,9 +2,9 @@
 set -exuo pipefail
 gatk HaplotypeCaller \
         -I $file_bqsr_bam \
-        --dbsnp $dbsnp \
+        --dbsnp $DBSNP \
         -O ${sample}.gvcf \
         --emit-ref-confidence GVCF \
-        -R $ref_fasta
+        -R $REF_FASTA
     bgzip ${sample}.gvcf
     tabix ${sample}.gvcf.gz
