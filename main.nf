@@ -113,10 +113,12 @@ workflow{
     GenotypeGVCF(RunGenomicsDBImport.out)
     ConcatVCF(GenotypeGVCF.out.collect())
     RunCSQ(ConcatVCF.out[0])
+    VariantEval(ConcatVCF.out[1], ConcatVCF.out[2], )
     
     RunMultiQC(
         RunFastQC.out[0].collect(),
-        CreateRecalibrationTable.out[1].collect()
+        CreateRecalibrationTable.out[1].collect(),
+        VariantEval.out
         )
 } // end of workflow
 

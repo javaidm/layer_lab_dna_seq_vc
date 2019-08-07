@@ -179,12 +179,32 @@ process RunCSQ{
     template "${TEMPLATE_DIR}/run_csq.sh"  
 }
 
+process VariantEval{
+    echo true
+    publishDir "${OUT_DIR}/variant_eval/"
+
+    input:
+    file(cohort_vcf)
+    file(vcf_index)
+
+    output:
+    file "$out_file"
+
+    script:
+    out_file = "cohort.eval.grp"    
+    script:
+    """ 
+    gatk VariantEval --eval $cohort_vcf --comp $DBSNP -R $REF_FASTA --output $out_file
+    """  
+}
+
 process RunMultiQC {
     publishDir "${OUT_DIR}/multiqc", mode: 'copy'
 
     input:
     file (fastqc:'fastqc/*')
     file ('gatk_base_recalibration/*')
+    file ('gatk_variant_eval/*')
     
     output:
     file '*multiqc_report.html'
