@@ -20,7 +20,15 @@ dependencies:
  - multiqc=1.6
 # - qualimap=2.2.2b
  - samtools=1.8
-# - snpeff=4.3.1t
+ - snpeff=4.3.1t
 # - strelka=2.9.3
-# - vcfanno=0.3.0
+ - vcfanno=0.3.2
 # - vcftools=0.1.16
+# Start of dependencies for pathoscore
+ - scikit-learn
+ - matplotlib
+ - numpy
+ - cyvcf2
+ - seaborn
+ - toolshed
+# End of pathoscore dependencies

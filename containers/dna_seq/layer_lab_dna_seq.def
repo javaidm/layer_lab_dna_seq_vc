@@ -6,6 +6,7 @@ environment.yml /opt/environment.yml
 
 %environment
 PATH=/opt/miniconda/envs/$(head -1 /opt/environment.yml | cut -d' ' -f2)/bin:$PATH
+PATH=/opt/gqt/bin:$PATH
 
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
@@ -21,13 +22,48 @@ echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 locale-gen en_US.UTF-8
 
+
 # bzip2 needed for miniconda
-apt-get -y install wget bzip2 procps
-# Clear apt-get local respository and cached packages
-apt-get clean
+apt-get -y install wget bzip2 procps git python-pip
+
+
 # Get and Install the minconda
 wget -c https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
 /bin/bash miniconda.sh -b -p ${conda_base_dir} && rm -f miniconda.sh
 
 # create a conda environment for this pipeline:
 ${conda} env create -f /opt/environment.yml
+
+# Get Pathoscore
+apt-get install -y libgl1
+#${conda} install -c bioconda toolshed
+git clone https://github.com/quinlan-lab/pathoscore.git /opt/pathoscore
+#pip install -r  /opt/pathoscore/requirements.txt
+
+# install requirements for gqt
+apt-get -y install flex unzip libbz2-dev liblzma-dev  autoconf make gcc libz-dev libssl-dev libcurl4-openssl-dev
+cd /opt
+
+# install htslib
+git clone https://github.com/samtools/htslib.git
+cd htslib
+autoheader
+autoconf
+./configure --disable-bz2 --disable-lzma --enable-libcurl
+make && echo "Done"
+cd ..
+
+#Download sqlite amalgamation source
+wget http://www.sqlite.org/2014/sqlite-amalgamation-3080701.zip
+unzip sqlite-amalgamation-3080701.zip
+
+
+# get gqt
+git clone https://github.com/ryanlayer/gqt.git
+cd gqt/
+
+# fix the line in src/Makefile to link properly against libcurl and libssl
+sed -i 's/-pthread/-pthread -lcurl -lcrypto/'  src/Makefile
+make && echo "Done"
+
+apt-get clean
