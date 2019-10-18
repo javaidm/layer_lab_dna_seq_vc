@@ -18,7 +18,7 @@ CUSTOM_RUN_NAME = params.customRunName
 // }
 process RunFastQC {
     tag "$sample"
-    publishDir "${OUT_DIR}/fastqc", mode: 'copy'
+    publishDir "${OUT_DIR}/fastqc", mode: 'copy', overwrite: false
     when:
     !params.skipQc && !params.skipFastQc
 
@@ -38,7 +38,7 @@ process RunFastQC {
 process MapReads {
     echo true
     tag "$sample"
-    publishDir "${OUT_DIR}/align/"
+    publishDir "${OUT_DIR}/align/" , mode: 'copy', overwrite: false
     input:
     set val(sample), file(reads)
 
@@ -57,7 +57,7 @@ process MapReads {
 process CreateRecalibrationTable{
     echo true
     tag "$sample"
-    publishDir "${OUT_DIR}/misc/recal_table/", mode: 'copy'
+    publishDir "${OUT_DIR}/misc/recal_table/", mode: 'copy', overwrite: false
 
     input:
     file (sample_cram)
@@ -75,7 +75,7 @@ process CreateRecalibrationTable{
 process ApplyBQSR {
     echo true
     tag "$sample"
-    publishDir "${OUT_DIR}/misc/BQSR/", mode: 'copy'
+    publishDir "${OUT_DIR}/misc/BQSR/", mode: 'copy', overwrite: false
 
     input:
     file(sample_cram) 
@@ -94,7 +94,7 @@ process ApplyBQSR {
 process CallVariants {
     echo true
     tag "$sample"
-    publishDir "${OUT_DIR}/variants/", mode: 'copy'
+    publishDir "${OUT_DIR}/variants/", mode: 'copy', overwrite: false
 
     input:
     file(file_bqsr_bam)
@@ -114,7 +114,7 @@ process CallVariants {
 
 process RunGenomicsDBImport {
     echo true
-    publishDir "${OUT_DIR}/misc/genomicsdb/"
+    publishDir "${OUT_DIR}/misc/genomicsdb/", mode: 'copy', overwrite: false
 
     input:
     file('*')
@@ -134,7 +134,7 @@ process RunGenomicsDBImport {
 
 process GenotypeGVCF{
     echo true
-    publishDir "${OUT_DIR}/misc/genotype_gvcf/"
+    publishDir "${OUT_DIR}/misc/genotype_gvcf/", mode: 'copy', overwrite: false
 
     input:
     file(genomics_db_workspace)
@@ -149,7 +149,7 @@ process GenotypeGVCF{
 
 process ConcatVCF{
     echo true
-    publishDir "${OUT_DIR}/results/"
+    publishDir "${OUT_DIR}/results/", mode: 'copy', overwrite: false
 
     input:
     file('*')
@@ -166,7 +166,7 @@ process ConcatVCF{
 
 process RunCSQ{
     echo true
-    publishDir "${OUT_DIR}/csq/"
+    publishDir "${OUT_DIR}/csq/", mode: 'copy', overwrite: false
 
     input:
     file(vcf)
@@ -181,7 +181,7 @@ process RunCSQ{
 
 process VariantEval{
     echo true
-    publishDir "${OUT_DIR}/variant_eval/"
+    publishDir "${OUT_DIR}/variant_eval/", mode: 'copy', overwrite: false
 
     input:
     file(cohort_vcf)
@@ -199,7 +199,7 @@ process VariantEval{
 }
 
 process RunMultiQC {
-    publishDir "${OUT_DIR}/multiqc", mode: 'copy'
+    publishDir "${OUT_DIR}/multiqc", mode: 'copy', overwrite: false
 
     input:
     file (fastqc:'fastqc/*')

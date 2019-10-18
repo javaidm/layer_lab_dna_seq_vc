@@ -71,7 +71,7 @@ Channel.from(LLabUtils.getChrmList())
 .set{chrmList}
 
 // println params
-include 'lib/nf_modules/modules.nf' params(
+include './lib/nf_modules/modules.nf' params(
                                 outDir: outDir,
                                 skipFastQc: params.skipFastQc,
                                 skipQc: params.skipQc,
