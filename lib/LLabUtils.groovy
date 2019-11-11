@@ -4,26 +4,16 @@ import nextflow.Channel
 class LLabUtils {
 
 static def extractSample(tsvFile) {
-  // Channeling the TSV file containing FASTQ or BAM
-  // Format is: "subject gender status sample lane fastq1 fastq2"
-  // or: "subject gender status sample lane bam"
-
   Channel.from(tsvFile)
-  .splitCsv()
+  .splitCsv(sep: "\t")
   .map { row ->
     def idPatient  = row[0]
     def file1      = this.returnFile(row[1])
-    def file2      = file("null")
-    if (this.hasExtension(file1, "fastq.gz")) {
-      this.checkNumberOfItem(row, 3)
-      file2 = this.returnFile(row[2])
-      if (!this.hasExtension(file2,"fastq.gz")) exit 1, "File: ${file2} has the wrong extension. See --help for more information"
-    }
-    else exit 1, "${file1} is not a fastq.gz file"
+    def file2      = this.returnFile(row[2])
     [idPatient,[ file1, file2]]
   }
-  
 } // end of method extractSample()
+
 static def runSanityChecks(dirPath){
   // this.checkIfBothReadsExist(dirPath)
 }
@@ -98,8 +88,10 @@ static def runSanityChecks(dirPath){
   }
   // // Return file if it exists
   static def returnFile(it) {
-    // if (!file(it).exists()) exit 1, "Missing file in TSV file: ${it}, see --help for more information"
-    if (!this.exists(it)) exit 1, "Missing file in TSV file: ${it}, see --help for more information"
+    if (!this.exists(it)){
+      println("Missing file listed  in TSV file: ${it}, see --help for more information")
+      System.exit(1)
+    }
     return file(it)
   }
 

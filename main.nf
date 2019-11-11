@@ -64,7 +64,10 @@ if (tsvPath){
       .set {inputFiles}
 }
 
-
+if (params.verbose){
+  println("Following samples will be processed")
+  inputFiles.subscribe {println it}
+}
 
 // Generate a channel holding chromosome list
 Channel.from(LLabUtils.getChrmList())
@@ -87,8 +90,6 @@ include './lib/nf_modules/modules.nf' params(
 
 
 workflow{
-    // Startup()
-    
     RunFastQC(inputFiles)
     MapReads(inputFiles)
     CreateRecalibrationTable(MapReads.out[0])
