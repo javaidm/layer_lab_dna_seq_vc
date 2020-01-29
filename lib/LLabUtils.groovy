@@ -4,15 +4,36 @@ import nextflow.Channel
 class LLabUtils {
 
 static def extractSample(tsvFile) {
+  // Channeling the TSV file containing FASTQ or BAM
+  // Format is: "subject gender status sample lane fastq1 fastq2"
+  // or: "subject gender status sample lane bam"
+
   Channel.from(tsvFile)
-  .splitCsv(sep: "\t")
+  .splitCsv(sep: '\t')
   .map { row ->
-    def idPatient  = row[0]
-    def file1      = this.returnFile(row[1])
-    def file2      = this.returnFile(row[2])
-    [idPatient,[ file1, file2]]
+    def parent_dir = file(tsvFile).parent
+    def sample  = row[0]
+    def path1 = "${parent_dir}/${sample}/${row[1]}"
+    def path2 = "${parent_dir}/${sample}/${row[2]}"
+    def file1      = this.returnFile(path1)
+    def file2      = this.returnFile(path2)
+    [sample,[ file1, file2]]
+  }
+  
+} // end of method extractSample()
+
+static def extractConditions(tsvFile) {
+  def parent_dir = file(tsvFile).parent
+  println("extractConditions() $tsvFile")
+  def l = []
+  Channel.from(tsvFile)
+  .splitCsv(sep: '\t', skip: 1)
+  .map {row ->
+    // println("processing $row")
+    [row[0],row[1]]
   }
 } // end of method extractSample()
+
 
 static def runSanityChecks(dirPath){
   // this.checkIfBothReadsExist(dirPath)
@@ -47,6 +68,12 @@ static def runSanityChecks(dirPath){
     def chrs = (1..22).collect()
     chrs.addAll(['X', 'Y', 'MT'])
     return chrs
+  }
+
+  static def getChrmListHg38(){
+    def chrs = (1..22).collect()
+    chrs.addAll(['X', 'Y'])
+    return chrs.collect {"chr$it"}
   }
   
   // // Return element in list of allowed params
