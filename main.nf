@@ -16,7 +16,8 @@ if (!params.sampleTsv && !params.reads){
 }
 // Check parameters for profile fiji
 // If they are not provided at the command line, set them for fiji from the env section of the config
-if (workflow.profile == 'fiji'){
+if (workflow.profile == 'fiji' || workflow.profile == 'fiji_hg37'){
+    println('setting from hg_37...')
   resultsDir = params.resultsDir ?: "$fiji_results_dir"
   dbsnp = params.dbsnp ?: "$fiji_dbsnp"
   ensemblGeneAnnotation = params.ensemblGeneAnnotation ?: "$fiji_ensembl_gene_annotation"
@@ -72,28 +73,8 @@ if (tsvPath){
       .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}"}
       .set {inputFiles}
 }
-ch_conditions = LLabUtils.extractConditions(file(params.conditionsTsv))
 // ch_conditions = LLabUtils.extractConditions(file(params.conditionsTsv))
-CRAMS_DIR = "${OUT_DIR}/aligned/crams"
-BAMS_DIR = "${OUT_DIR}/aligned/bams"
-// RECAL_TABLES_DIR="${OUT_DIR}/misc/recal_table"
-// ch_crams = Channel.fromPath( "${CRAMS_DIR}/*.cram" )
-// ch_crams_index = Channel.fromPath( "${CRAMS_DIR}/*.cram.crai" )
-// ch_bams = Channel.fromFilePairs( "${BAMS_DIR}/*.{bam,bam.bai}" )
-// ch_crams.
-// view{println it}
-ch_crams = 
-  Channel
-    .fromFilePairs("${CRAMS_DIR}/*.{cram,cram.crai}", size: -1) 
-    { file -> file.simpleName }
-    // .println { ext, files ->  "Files with the extension $ext are $files" }
-
-ch_crams
-.subscribe{println(it)}
-// ch_bams = 
-//   Channel
-//     .fromFilePairs("${BAMS_DIR}/*.{bam,bam.bai}", size: -1) 
-//     { file -> file.simpleName }
+// ch_conditions = LLabUtils.extractConditions(file(params.conditionsTsv))
 
 if (params.verbose){
   println("Following samples will be processed")
@@ -107,32 +88,14 @@ Channel.from(LLabUtils.getChrmList())
 Channel.from(LLabUtils.getChrmListHg38())
 .set{chrmListHg38}
 
-// println params
-// include './lib/nf_modules/modules.nf' params(
-//                                 outDir: outDir,
-//                                 skipFastQc: params.skipFastQc,
-//                                 skipQc: params.skipQc,
-//                                 dbsnp: dbsnp,
-//                                 ensemblGeneAnnotation: ensemblGeneAnnotation,
-//                                 refFasta: refFasta,
-//                                 knownIndels: knownIndels,
-//                                 templateDir: templateDir,
-//                                 platform: platform,
-// 				                        customRunName:  params.runName,
-//                                 threads: 32
-//                                 )
-
-
 workflow{
     // RunFastQC(inputFiles)
-    // MapReads(inputFiles)
-    // CreateRecalibrationTable(MapReads.out[0])
-    
-    CreateRecalibrationTable(ch_crams)
+    MapReads(inputFiles)
+    CreateRecalibrationTable(MapReads.out[0])
 
     ApplyBQSR(
-            CreateRecalibrationTable.out[0], 
-            CreateRecalibrationTable.out[1]
+            MapReads.out[0], 
+            CreateRecalibrationTable.out
             )
     
     CallVariants(
@@ -265,19 +228,21 @@ process MapReads {
     set val(sample), file(reads)
 
     output:
-    file("${sample}.cram")
-    file '.command.log'
+    file(out_file)
+    file("${out_file}.crai")
 
     script:
     r1 = reads[0]
     r2 = reads[1]
     
     script:
+    out_file = "${sample}.cram"
    """
    bwa mem \
     -t $THREADS -R "@RG\tID:$sample\tSM:$sample\tPL:$PLATFORM\tPU:$sample\tLB:$sample" $refFasta $r1 $r2 \
     | samblaster \
-    | samtools sort --output-fmt-option seqs_per_slice=4000 -O CRAM --reference $refFasta -m 18G -@ 6 /dev/stdin -o ${sample}.cram
+    | samtools sort --output-fmt-option seqs_per_slice=4000 -O CRAM --reference $refFasta -m 18G -@ 6 /dev/stdin -o $out_file \
+    && samtools index $out_file
    """
 }
 
@@ -287,17 +252,17 @@ process CreateRecalibrationTable{
     publishDir "${OUT_DIR}/misc/recal_table/", mode: 'copy', overwrite: false
 
     input:
-    // file (sample_cram)
-    set val(sample), file(sample_cram_index_pair)
+    file (sample_cram)
+    // set val(sample), file(sample_cram_index_pair)
     
     output:
-    file(sample_cram)
+    // file(sample_cram)
     file("${sample}.recal.table")
-    file '.command.log'
+    // file '.command.log'
     
     script:
-    sample_cram = sample_cram_index_pair[0]
-    sample = "${sample_cram.baseName}" 
+    // sample_cram = sample_cram_index_pair[0]
+    sample = sample_cram.baseName 
     """
     gatk BaseRecalibrator \
             -I  $sample_cram\
