@@ -64,7 +64,7 @@ if (params.sampleTsv) tsvPath = params.sampleTsv
 if (tsvPath){
     tsvFile = file(tsvPath)
     if (!tsvFile.exists()) exit 1, "${tsvPath} does not exists!"
-    inputFiles = LLabUtils.extractSample(tsvFile)
+    inputFiles = LLabUtils.extractSamples(tsvFile)
 }else{
   // Define channel for reading file pairs
   Channel

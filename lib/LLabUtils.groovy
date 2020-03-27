@@ -3,7 +3,7 @@ import nextflow.Channel
 
 class LLabUtils {
 
-static def extractSample(tsvFile) {
+static def extractSamples(tsvFile) {
   // Channeling the TSV file containing FASTQ or BAM
   // Format is: "subject gender status sample lane fastq1 fastq2"
   // or: "subject gender status sample lane bam"
@@ -12,9 +12,13 @@ static def extractSample(tsvFile) {
   .splitCsv(sep: '\t')
   .map { row ->
     def parent_dir = file(tsvFile).parent
-    def sample  = row[0]
-    def path1 = "${parent_dir}/${sample}/${row[1]}"
-    def path2 = "${parent_dir}/${sample}/${row[2]}"
+    def sample  = row[0].trim()
+    def trimmed_r1 = "${row[1]}".trim()
+    def trimmed_r2 = "${row[2]}".trim()
+    def path1 = "${parent_dir}/${trimmed_r1}"
+    def path2 = "${parent_dir}/${trimmed_r2}"
+    // println("path1:$path1")
+    // println("path2:$path2")
     def file1      = this.returnFile(path1)
     def file2      = this.returnFile(path2)
     [sample,[ file1, file2]]
