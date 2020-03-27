@@ -17,12 +17,11 @@ if (!params.sampleTsv && !params.reads){
 // Check parameters for profile fiji
 // If they are not provided at the command line, set them for fiji from the env section of the config
 if (workflow.profile == 'fiji' || workflow.profile == 'fiji_hg37'){
-    println('setting from hg_37...')
-  resultsDir = params.resultsDir ?: "$fiji_results_dir"
-  dbsnp = params.dbsnp ?: "$fiji_dbsnp"
-  ensemblGeneAnnotation = params.ensemblGeneAnnotation ?: "$fiji_ensembl_gene_annotation"
-  knownIndels = params.knownIndels ?: "$fiji_known_indels"
-  refFasta = params.refFasta ?: "$fiji_ref_fasta"
+    resultsDir = params.resultsDir ?: "$fiji_results_dir"
+    dbsnp = params.dbsnp ?: "$fiji_dbsnp"
+    ensemblGeneAnnotation = params.ensemblGeneAnnotation ?: "$fiji_ensembl_gene_annotation"
+    knownIndels = params.knownIndels ?: "$fiji_known_indels"
+    refFasta = params.refFasta ?: "$fiji_ref_fasta"
 }
 
 // if (workflow.profile == 'fiji_hg38'){
@@ -82,11 +81,17 @@ if (params.verbose){
 }
 
 // Generate a channel holding chromosome list
-Channel.from(LLabUtils.getChrmList())
-.set{chrmList}
+chrmList = []
+if (workflow.profile == 'fiji_hg37'){
+    Channel.from(LLabUtils.getChrmList())
+    .set{chrmList}
+}else{
+    Channel.from(LLabUtils.getChrmListHg38())
+    .set{chrmList}
+}
 
-Channel.from(LLabUtils.getChrmListHg38())
-.set{chrmListHg38}
+
+
 
 workflow{
     // RunFastQC(inputFiles)
@@ -107,7 +112,7 @@ workflow{
         CallVariants.out[0].collect(),
         CallVariants.out[1].collect(),
         CallVariants.out[2].collect(),
-        chrmListHg38
+        chrmList
         )
     
     GenotypeGVCF(RunGenomicsDBImport.out)
