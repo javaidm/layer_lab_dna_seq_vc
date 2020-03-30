@@ -81,14 +81,15 @@ if (params.verbose){
 }
 
 // Generate a channel holding chromosome list
-chrmList = []
+listOfChromosoms = []
 if (workflow.profile == 'fiji_hg37'){
-    Channel.from(LLabUtils.getChrmList())
-    .set{chrmList}
+    listOfChromosoms = LLabUtils.getChrmList()
 }else{
-    Channel.from(LLabUtils.getChrmListHg38())
-    .set{chrmList}
+   listOfChromosoms = LLabUtils.getChrmListHg38()
 }
+
+Channel.from(LLabUtils.getChrmList())
+    .set{chrmListCh}
 
 
 
@@ -112,7 +113,7 @@ workflow{
         CallVariants.out[0].collect(),
         CallVariants.out[1].collect(),
         CallVariants.out[2].collect(),
-        chrmList
+        chrmListCh
         )
     
     GenotypeGVCF(RunGenomicsDBImport.out)
@@ -387,7 +388,7 @@ process GenotypeGVCF{
 process ConcatVCF{
     echo true
     publishDir "${OUT_DIR}/results/", mode: 'copy', overwrite: false
-
+    // cache false
     input:
     file('*')
 
@@ -398,37 +399,51 @@ process ConcatVCF{
 
     script:
     out_file='cohort_joint.vcf'
+    // vcf_list=''
+    // chrmList.view{
+    //     vcf_list += "$it "
+    // }
+    vcfs = ''
+    listOfChromosoms.each{
+        vcfs += "${it}.vcf "
+    }
     """
-    bcftools concat -o ${out_file} -Ov \
-    chr1.vcf \
-    chr2.vcf \
-    chr3.vcf \
-    chr4.vcf \
-    chr5.vcf \
-    chr6.vcf \
-    chr7.vcf \
-    chr8.vcf \
-    chr9.vcf \
-    chr10.vcf \
-    chr11.vcf \
-    chr12.vcf \
-    chr13.vcf \
-    chr14.vcf \
-    chr15.vcf \
-    chr16.vcf \
-    chr17.vcf \
-    chr18.vcf \
-    chr19.vcf \
-    chr20.vcf \
-    chr21.vcf \
-    chr22.vcf \
-    chrX.vcf \
-    chrY.vcf
-
+    bcftools concat -o ${out_file} -Ov $vcfs
     bgzip -c ${out_file} > ${out_file}.gz
     tabix -p vcf ${out_file}.gz
 """
 }
+// process ConcatVCF{
+//     echo true
+//     publishDir "${OUT_DIR}/results/", mode: 'copy', overwrite: false
+//     cache false
+//     input:
+//     file('*')
+
+//     output:
+//     file(out_file)
+//     file "${out_file}.gz" 
+//     file "${out_file}.gz.tbi"
+
+//     script:
+//     out_file='cohort_joint.vcf'
+//     // vcf_list=''
+//     // chrmList.view{
+//     //     vcf_list += "$it "
+//     // }
+
+//     """
+//     vcfs=''
+//     for x in `ls *.vcf`
+//     do
+//         vcfs="\${vcfs}\t\${x}"
+//     done
+
+//     bcftools concat -o ${out_file} -Ov $vcfs
+//     bgzip -c ${out_file} > ${out_file}.gz
+//     tabix -p vcf ${out_file}.gz
+// """
+// }
 
 process RunCSQ{
     echo true
