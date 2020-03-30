@@ -13,7 +13,14 @@ dependencies:
  - font-ttf-dejavu-sans-mono=2.37 #for FastQC
  - fontconfig=2.12.6 #for FastQC
 # - freebayes=1.2.0
- - gatk4=4.1.2.0
+# gatk dependcies such as r
+ - r-data.table
+ - r-gplots
+ - r-ggplot2
+ - r-gsalib
+ - r-optparse
+ - r-reshape
+ - gatk4=4.1.4.0
  - htslib=1.9
 # - igvtools=2.3.93
 # - manta=1.4.0
@@ -24,6 +31,8 @@ dependencies:
 # - strelka=2.9.3
  - vcfanno=0.3.2
 # - vcftools=0.1.16
+# CNVKit
+ - cnvkit
 # Start of dependencies for pathoscore
  - scikit-learn
  - matplotlib
@@ -32,3 +41,4 @@ dependencies:
  - seaborn
  - toolshed
 # End of pathoscore dependencies
+# Gemini

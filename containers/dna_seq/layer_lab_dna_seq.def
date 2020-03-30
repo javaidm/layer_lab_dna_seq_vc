@@ -7,13 +7,20 @@ environment.yml /opt/environment.yml
 %environment
 PATH=/opt/miniconda/envs/$(head -1 /opt/environment.yml | cut -d' ' -f2)/bin:$PATH
 PATH=/opt/gqt/bin:$PATH
+PATH=/opt/bin/:$PATH
+#export R_LIBS_SITE=/usr/lib/R/site-library/
+export CLASSPATH=/opt/miniconda/envs/layer_lab_dna_seq/share/gatk4-4.1.4.0-1/gatk-package-4.1.4.0-local.jar:/opt/SavvySuite
 
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
 %post
+mkdir /opt/bin
 conda_base_dir=/opt/miniconda
-conda="${conda_base_dir}/bin/conda"
+conda_bin_dir="${conda_base_dir}/bin"
+conda="${conda_bin_dir}/conda"
+javac_bin=/opt/miniconda/envs/layer_lab_dna_seq/bin/javac
+gatk_base_dir=/opt/miniconda/envs/layer_lab_dna_seq/share/gatk4-4.1.4.0-1
 
 apt-get update
 apt-get -y install locales
@@ -23,6 +30,8 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 locale-gen en_US.UTF-8
 
 
+# Install R and packages needed by gatk
+#apt-get -y install libopenblas-base r-base r-cran-ggplot2 r-cran-gplots r-cran-reshape r-cran-optparse
 # bzip2 needed for miniconda
 apt-get -y install wget bzip2 procps git python-pip
 
@@ -34,11 +43,27 @@ wget -c https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O
 # create a conda environment for this pipeline:
 ${conda} env create -f /opt/environment.yml
 
+# Install SavvyCNV for CNA calling using off-target reads
+apt-get -y install gnuplot-qt gnuplot
+strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+git clone https://github.com/rdemolgen/SavvySuite.git /opt/SavvySuite
+${javac_bin} -cp ${gatk_base_dir}/gatk-package-4.1.4.0-local.jar -d /opt/SavvySuite  /opt/SavvySuite/*.java 
+
 # Get Pathoscore
 apt-get install -y libgl1
 #${conda} install -c bioconda toolshed
 git clone https://github.com/quinlan-lab/pathoscore.git /opt/pathoscore
 #pip install -r  /opt/pathoscore/requirements.txt
+
+# fetch slivar binary
+wget https://github.com/brentp/slivar/releases/download/v0.1.6/slivar
+chmod +x slivar
+mv slivar /opt/bin/
+
+# Set gargs
+wget https://github.com/brentp/gargs/releases/download/v0.3.9/gargs_linux -O gargs
+chmod +x gargs
+mv gargs /opt/bin/
 
 # install requirements for gqt
 apt-get -y install flex unzip libbz2-dev liblzma-dev  autoconf make gcc libz-dev libssl-dev libcurl4-openssl-dev
@@ -50,7 +75,7 @@ cd htslib
 autoheader
 autoconf
 ./configure --disable-bz2 --disable-lzma --enable-libcurl
-make && echo "Done"
+make -j8 && echo "Done"
 cd ..
 
 #Download sqlite amalgamation source
@@ -65,5 +90,3 @@ cd gqt/
 # fix the line in src/Makefile to link properly against libcurl and libssl
 sed -i 's/-pthread/-pthread -lcurl -lcrypto/'  src/Makefile
 make && echo "Done"
-
-apt-get clean
