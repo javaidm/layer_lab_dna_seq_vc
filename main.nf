@@ -99,27 +99,27 @@ workflow{
     MapReads(inputFiles)
     CreateRecalibrationTable(MapReads.out[0])
 
-    ApplyBQSR(
-            MapReads.out[0], 
-            CreateRecalibrationTable.out
-            )
+     ApplyBQSR(
+             CreateRecalibrationTable.out[0],
+             CreateRecalibrationTable.out[1]
+             )
     
-    CallVariants(
-                    ApplyBQSR.out[0],
-                    ApplyBQSR.out[1]
-                    )
+     CallVariants(
+                     ApplyBQSR.out[0],
+                     ApplyBQSR.out[1]
+                     )
     
-    RunGenomicsDBImport(
-        CallVariants.out[0].collect(),
-        CallVariants.out[1].collect(),
-        CallVariants.out[2].collect(),
-        chrmListCh
-        )
+     RunGenomicsDBImport(
+         CallVariants.out[0].collect(),
+         CallVariants.out[1].collect(),
+         CallVariants.out[2].collect(),
+         chrmListCh
+         )
     
-    GenotypeGVCF(RunGenomicsDBImport.out)
-    ConcatVCF(GenotypeGVCF.out.collect())
-    RunCSQ(ConcatVCF.out[0])
-    VariantEval(ConcatVCF.out[1], ConcatVCF.out[2], )
+     GenotypeGVCF(RunGenomicsDBImport.out)
+     ConcatVCF(GenotypeGVCF.out.collect())
+     RunCSQ(ConcatVCF.out[0])
+     VariantEval(ConcatVCF.out[1], ConcatVCF.out[2], )
     
     // RunMultiQC(
     //     RunFastQC.out[0].collect(),
@@ -262,7 +262,7 @@ process CreateRecalibrationTable{
     // set val(sample), file(sample_cram_index_pair)
     
     output:
-    // file(sample_cram)
+    file(sample_cram)
     file("${sample}.recal.table")
     // file '.command.log'
     
@@ -282,6 +282,7 @@ process CreateRecalibrationTable{
 process ApplyBQSR {
     echo true
     tag "$sample"
+    //errorStrategy 'ignore'
     publishDir "${OUT_DIR}/misc/BQSR/", mode: 'copy', overwrite: false
 
     input:
@@ -388,7 +389,7 @@ process GenotypeGVCF{
 process ConcatVCF{
     echo true
     publishDir "${OUT_DIR}/results/", mode: 'copy', overwrite: false
-    // cache false
+    
     input:
     file('*')
 

@@ -29,6 +29,18 @@ The first column is the sample name, and the next two columns represents the fir
 		--run-name='run_1' -profile fiji_hg37 -resume
 	
 The above run will create the results files in dir `/Shares/layer_shared/projects/sequence_analysis/run_1` *(by concatenating the results-dir, and the run-name)*
+#### Passing parameters to the pipeline
+Nextflow (and this pipeline) allows the following three ways to pass params to a pipeline run:
+1. At the *commandline*, using syntex like *- -sample-tsv*, or *- -results-dir* (note the double dashes before param names)
+2. Still at the commandline but putting params in a *yaml* file and by passing that file as *- -params my_params.yaml*. See below  an excerpt from a params.yaml file:
+
+        sampleTsv: "/Shares/layer_shared/projects/cancer_center_tiny/samples.tsv"
+        runName: "cancer_center_tiny"
+        conditionsTsv: "/Shares/layer_shared/projects/cancer_center_tiny/conditions.tsv"
+        sendEmail: False
+        logFilesDur:    "logs"
+        nfOptions: "-with-reports -with-trace -with-timeline -with-dag flowchart.png"
+3. As part of the *profile config* file. See examples in the *conf* subdirectory.
 
 #### Extras
 #### Building singularity container
